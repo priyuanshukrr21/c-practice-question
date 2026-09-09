@@ -16,6 +16,13 @@ int getlength(char arr[])
 void concatarray(char a[], char b[]){
 int aindex = getlength(a);
 int bindex = 0;
+
+while(b[bindex] !='\0') {
+    a[aindex] = b[bindex];
+    aindex++;
+    bindex++;
+}
+a[aindex] = '\0';
 }
 
 int main() 

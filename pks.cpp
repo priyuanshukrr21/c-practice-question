@@ -8,5 +8,5 @@ int main()
     int &temp = a;
 
     cout << "temp = " << temp << endl;
-    return 0;
+    return 0; 
 }

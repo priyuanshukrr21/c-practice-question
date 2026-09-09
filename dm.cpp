@@ -10,4 +10,4 @@ cout << *ptr;
 
 return 0;
 
-}
+} 
