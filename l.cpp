@@ -37,7 +37,7 @@ int main() {
     cout << "Enter Choice: ";
     cin >> choice;
 
-    cout << "\nEnter Account Number: ";
+    cout << "\nEnter Account Number : ";
     cin >> searchAccount;
 
     int index = -1;
