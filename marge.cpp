@@ -15,7 +15,7 @@ int main() {
     for (auto interval : intervals) {
         if (result.empty() ||
             result.back()[1] < interval[0]) {
-            result.push_back(interval);
+            result.push_back(interval );
         } else {
             result.back()[1] =
                 max(result.back()[1], interval[1]);
