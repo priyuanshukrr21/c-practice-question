@@ -1,0 +1,88 @@
+
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <future>
+#include <functional>
+#include <stdexcept>
+using namespace std;
+
+class ThreadPool {
+    vector<thread> workers;
+    queue<function<void()>> tasks;
+    mutex m;
+    condition_variable cv;
+    bool stop = false;
+
+public:
+    explicit ThreadPool(size_t n) {
+        for (size_t i = 0; i < n; i++) {
+            workers.emplace_back([this]() {
+                while (true) {
+                    function<void()> task;
+
+                    {
+                        unique_lock<mutex> lock(m);
+                        cv.wait(lock, [this] {
+                            return stop || !tasks.empty();
+                        });
+
+                        if (stop && tasks.empty())
+                            return;
+
+                        task = move(tasks.front());
+                        tasks.pop();
+                    }
+
+                    task();
+                }
+            });
+        }
+    }
+
+    template<class F>
+    auto submit(F f) -> future<decltype(f())> {
+        using R = decltype(f());
+        auto task = make_shared<packaged_task<R()>>(move(f));
+        future<R> result = task->get_future();
+
+        {
+            lock_guard<mutex> lock(m);
+            if (stop)
+                throw runtime_error("ThreadPool stopped");
+
+            tasks.push([task]() { (*task)(); });
+        }
+
+        cv.notify_one();
+        return result;
+    }
+
+    ~ThreadPool() {
+        {
+            lock_guard<mutex> lock(m);
+            stop = true;
+        }
+
+        cv.notify_all();
+
+        for (auto& worker : workers)
+            if (worker.joinable())
+                worker.join();
+    }
+};
+
+int main() {
+    ThreadPool pool(3);
+
+    auto result = pool.submit([] {
+        return 10 + 20;
+    });
+
+    cout << result.get() << '\n';
+
+    return 0;
+}
