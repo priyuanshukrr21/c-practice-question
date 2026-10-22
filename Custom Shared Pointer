@@ -1,0 +1,61 @@
+
+#include <iostream>
+using namespace std;
+
+template <typename T>
+class MySharedPtr {
+    T* ptr;
+    int* count;
+
+    void release() {
+        if (count && --(*count) == 0) {
+            delete ptr;
+            delete count;
+        }
+    }
+
+public:
+    explicit MySharedPtr(T* p = nullptr)
+        : ptr(p), count(p ? new int(1) : nullptr) {}
+
+    MySharedPtr(const MySharedPtr& other)
+        : ptr(other.ptr), count(other.count) {
+        if (count) ++(*count);
+    }
+
+    MySharedPtr& operator=(const MySharedPtr& other) {
+        if (this == &other) return *this;
+
+        release();
+        ptr = other.ptr;
+        count = other.count;
+
+        if (count) ++(*count);
+        return *this;
+    }
+
+    T& operator*() const { return *ptr; }
+    T* operator->() const { return ptr; }
+
+    int use_count() const {
+        return count ? *count : 0;
+    }
+
+    ~MySharedPtr() {
+        release();
+    }
+};
+
+int main() {
+    MySharedPtr<int> p1(new int(50));
+
+    {
+        MySharedPtr<int> p2 = p1;
+        cout << *p2 << '\n';
+        cout << p2.use_count() << '\n';
+    }
+
+    cout << p1.use_count() << '\n';
+
+    return 0;
+}
