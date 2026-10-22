@@ -1,0 +1,53 @@
+
+#include <iostream>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <thread>
+using namespace std;
+
+class ThreadSafeQueue {
+    queue<int> q;
+    mutex m;
+    condition_variable cv;
+
+public:
+    void push(int value) {
+        {
+            lock_guard<mutex> lock(m);
+            q.push(value);
+        }
+        cv.notify_one();
+    }
+
+    int pop() {
+        unique_lock<mutex> lock(m);
+
+        cv.wait(lock, [this] {
+            return !q.empty();
+        });
+
+        int value = q.front();
+        q.pop();
+        return value;
+    }
+};
+
+int main() {
+    ThreadSafeQueue q;
+
+    thread producer([&q]() {
+        for (int i = 1; i <= 5; i++)
+            q.push(i);
+    });
+
+    thread consumer([&q]() {
+        for (int i = 1; i <= 5; i++)
+            cout << q.pop() << " ";
+    });
+
+    producer.join();
+    consumer.join();
+
+    return 0;
+}
